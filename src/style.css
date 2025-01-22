@@ -38,6 +38,9 @@ h1 {
 	line-height: 1.1;
 	color: #222222;
 }
+h2 {
+	margin-bottom: 10px;	
+}
 
 p {
 	margin: 6px 0;

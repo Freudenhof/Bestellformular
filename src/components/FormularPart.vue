@@ -1,7 +1,7 @@
 
 
 <template>
-	<content v-if="stage == 'pick'">
+	<div class="content" v-if="stage == 'pick'">
 		<h1>Bestellformular</h1>
 
 		<p>Willkommen zu unserem Bestellformular für die Gemüse-Abokiste!</p>
@@ -48,28 +48,37 @@
 
 		<div id="order_sum" class="button_bar">
 			ca. {{ printPrice(sum) }}
-			<button @click="if (ordered.length) {stage = 'overview';}">Weiter</button>
+			<button @click="nextPage()">Weiter</button>
 		</div>
 
-	</content>
-	<content v-if="stage == 'overview'">
+	</div>
+	<div class="content" v-if="stage == 'overview'">
 		<h1>Bestellformular</h1>
 
 		<div class="form_bar flex">
-			<label>Name:</label>
+			<label>Name</label>
 			<input type="text" v-model="customer_data.name">
 		</div>
 		<div class="form_bar">
-			<label>Nachricht: (optional)</label>
+			<label>Nachricht (optional)</label>
 			<textarea v-model="customer_data.message"></textarea>
 		</div>
 
+		<h2>Bestellübersicht</h2>
 		<ul id="overview_list" v-if="stage == 'overview'">
 			<li v-for="product in ordered">
 				<div class="overview_product_name">{{ product.name }}</div>
 				<div class="overview_product_origin">{{ product.origin }}</div>
 				<div class="overview_product_amount">{{ product.amount + ' ' + product.unit }}</div>
 				<div class="overview_product_sum">{{ printPrice(product.amount * product.price) }}</div>
+			</li>
+			<li>
+				<div class="overview_product_extra">Lieferkosten</div>
+				<div class="overview_product_sum">{{ printPrice(2) }}</div>
+			</li>
+			<li>
+				<div class="overview_product_extra">Lieferung Mengenrabatt</div>
+				<div class="overview_product_sum">{{ printPrice(-1) }}</div>
 			</li>
 		</ul>
 
@@ -79,19 +88,33 @@
 			ca. {{ printPrice(sum) }}
 			<button @click="order()">Bestellen</button>
 		</div>
-	</content>
+	</div>
 
-	<content v-if="stage == 'success'">
+	<div class="content" v-if="stage == 'success'">
 		<h1>Bestellformular</h1>
 
 		<p>Ihre Bestellung wurde abgeschickt, vielen Dank!</p>
-	</content>
 
-	<content v-if="stage == 'error'">
+		<button @click="downloadSheet()">Bestellung Herunterladen</button>
+		<label style="margin: 0 10px;">{{ getCSVFilename() }}</label>
+
+		<div class="button_bar">
+			<button @click="stage = 'pick'">Zurück zum Formular</button>
+		</div>
+	</div>
+
+	<div class="content" v-if="stage == 'error'">
 		<h1>Bestellformular</h1>
 
-		<p>Ein Fehler ist aufgetreten...</p>
-	</content>
+		<p>Beim Abschicken der Bestellung ist ein Fehler aufgetreten...</p>
+		<p>Sie können die Bestellung stattdessen als Datei herunterladen, und uns per E-Mail zuschicken!</p>
+		<button @click="downloadSheet()">Bestellung Herunterladen</button>
+		<label style="margin: 0 10px;">{{ getCSVFilename() }}</label>
+
+		<div class="button_bar">
+			<button @click="stage = 'overview'" style="margin-right: auto;">Zurück</button>
+		</div>
+	</div>
 	
 </template>
 
@@ -131,7 +154,7 @@ type Product = {
 	comment_enabled: boolean
 }
 
-const CSV_REGEX = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
+//const CSV_REGEX = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
 function readCells(line: string): string[] {
 	let in_escaped = false;
 	let result: string[] = [];
@@ -170,7 +193,6 @@ async function parseCSVFile() {
 		let cells = readCells(line)
 		if (!cells[5] || !cells[7] || !cells[8]) continue;
 
-		console.log(cells[7], parseGermanFloat(cells[7]))
 		const product: Product = {
 			packorder: parseInt(cells[3]),
 			group: parseInt(cells[4]),
@@ -185,6 +207,7 @@ async function parseCSVFile() {
 		}
 		data.products.push(product);
 	}
+	console.log(`Loaded ${data.products.length} products`);
 }
 parseCSVFile();
 
@@ -218,7 +241,15 @@ export default {
 		printPrice(price: number) {
 			return price.toFixed(2).replace(/\./, ',') + ' €';
 		},
-		order() {
+		nextPage() {
+			if (this.ordered.length) {
+				this.stage = 'overview';
+				window.scrollTo(0, 0);
+			} else {
+				alert('Bitte zunächst eine Bestellmenge eingeben.')
+			}
+		},
+		generateOrderSheet(): string {
 			let lineify = (cells: (string|number)[]): string => {
 				return cells.map(cell => {
 					if (typeof cell == 'number') {
@@ -244,6 +275,17 @@ export default {
 				if (a.packorder != b.packorder) return a.packorder-b.packorder;
 				return a.group-b.group;
 			});
+
+			lines.push(lineify([
+				'Gruppe',
+				'Bezeichnung',
+				'Herkunft',
+				'Einheit',
+				'Preis',
+				'Menge',
+				'Bemerkung',
+				'Summe',
+			]))
 	
 			for (let product of ordered_products) {
 				let cells = [
@@ -259,27 +301,40 @@ export default {
 				];
 				lines.push(lineify(cells));
 			}
-			let page = lines.join('\n');
+			return lines.join('\n');
+		},
+		getCSVFilename() {
+			return `Bestellung ${this.date}.csv`
+		},
+		order() {
+			if (!this.customer_data.name || this.customer_data.name.length < 4) {
+				alert('Bitte geben Sie einen Namen ein')
+				return;
+			}
 
-			let blob = new Blob([page], {type: 'text/plain;charset=utf-8'});
-			FileSaver.saveAs(blob, `bestellung ${this.date}.csv`);
+			let order = this.generateOrderSheet();
 
-			/*fetch("https://freudenhof.de/register-order/", {
+			fetch("https://freudenhof.de/register-order/", {
 				method: "POST",
 				body: JSON.stringify({
-					username: 'Herr Mueller',
-					order: page,
+					customer_name: this.customer_data.name,
+					customer_message: this.customer_data.message,
+					order: order,
 				}),
 				headers: {
 					"Content-type": "application/json; charset=UTF-8"
 				}
 			}).then((response) => {
 				response.text().then(console.log)
+				this.stage = 'success';
 			}).catch(() => {
-				
-			})*/
-
-
+				this.stage = 'error';
+			})
+		},
+		downloadSheet() {
+			let page = this.generateOrderSheet();
+			let blob = new Blob([page], {type: 'text/plain;charset=utf-8'});
+			FileSaver.saveAs(blob, this.getCSVFilename());
 		}
 	}
 }
@@ -288,8 +343,11 @@ export default {
 
 <style scoped>
 
-content {
+div.content {
 	min-height: calc(100% - 230px);
+	max-width: var(--max-body-width);
+	display: block;
+	margin: auto
 }
 h1 {
 	font-size: min(13vw, 38px);
@@ -297,11 +355,6 @@ h1 {
     font-kerning: 14px;
     letter-spacing: -1px;
 	max-width: min(var(--max-body-width), calc(100vw - 36px));
-}
-content {
-	max-width: var(--max-body-width);
-	display: block;
-	margin: auto
 }
 
 p.date {
@@ -345,6 +398,9 @@ ul#product_list {
 	border-bottom: 1px solid var(--color-border);
 	border-right: 6px solid transparent;
 	gap: 6px 10px;
+}
+.product:last-child {
+	border-bottom: none;
 }
 .product.selected {
 	background-color: var(--color-offwhite);
@@ -413,7 +469,6 @@ ul#overview_list {
 	border-radius: 5px;
 	border: 1px solid var(--color-border);
 	margin: 0;
-	margin-top: 30px;
 	padding-left: 0;
 	overflow: hidden;
 }
@@ -430,6 +485,9 @@ ul#overview_list > li:last-child {
 .overview_product_name {
 	font-weight: 600;
 }
+.overview_product_extra {
+	flex-grow: 1;
+}
 .overview_product_origin {
 	flex-grow: 1;
     font-size: 13px;
@@ -439,7 +497,8 @@ ul#overview_list > li:last-child {
 	width: 80px;
 }
 .overview_product_sum {
-	width: 54px;
+	width: 62px;
+	text-align: right;
 }
 
 .button_bar {
@@ -451,6 +510,13 @@ ul#overview_list > li:last-child {
 	align-items: center;
 }
 #order_sum {
+	position: sticky;
+    bottom: 8px;
+    background: #fff;
+    padding: 10px 9px;
+    border-radius: 14px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    margin: 38px -9px;
 }
 #order_sum label {
 	margin-right: auto;
