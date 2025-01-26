@@ -72,7 +72,7 @@
 				<div class="overview_product_amount">{{ product.amount + ' ' + product.unit }}</div>
 				<div class="overview_product_sum">{{ printPrice(product.amount * product.price) }}</div>
 			</li>
-			<li style="padding-bottom: 28px;">
+			<li style="border-top: 2px solid var(--color-border);">
 				<div class="overview_product_extra">Bestellwert</div>
 				<div class="overview_product_sum">{{ printPrice(sum) }}</div>
 			</li>
