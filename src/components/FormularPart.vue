@@ -121,6 +121,9 @@
 <script lang="ts">
 import FileSaver from 'file-saver';
 import { reactive } from 'vue';
+import csv_content from "./../../preisliste.csv?raw";
+//const csv_content = import(`./../../preisliste.csv?raw`);
+console.log(csv_content)
 
 type Data = {
 	date: string,
@@ -181,10 +184,10 @@ function parseGermanFloat(input: string): number {
 async function parseCSVFile() {
 	var myHeaders = new Headers();
 	myHeaders.append('Content-Type','text/plain; charset=UTF-8');
-	const response = await fetch('./../preisliste.csv', {headers: myHeaders});
-	let buffer = await response.arrayBuffer();
-	const decoder = new TextDecoder('iso-8859-1');
-    const csv_content = decoder.decode(buffer);
+	//const response = await fetch('./../preisliste.csv', {headers: myHeaders});
+	//let buffer = await response.arrayBuffer();
+	//const decoder = new TextDecoder('iso-8859-1');
+    //const csv_content = decoder.decode(buffer);
 	let lines = csv_content.split(/\n/g);
 	
 	data.date = readCells(lines[11])[5] ?? '';
