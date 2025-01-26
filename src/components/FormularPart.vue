@@ -74,18 +74,18 @@
 			</li>
 			<li>
 				<div class="overview_product_extra">Lieferkosten</div>
-				<div class="overview_product_sum">{{ printPrice(2) }}</div>
+				<div class="overview_product_sum">{{ printPrice(shipping_base) }}</div>
 			</li>
 			<li>
 				<div class="overview_product_extra">Lieferung Mengenrabatt</div>
-				<div class="overview_product_sum">{{ printPrice(-1) }}</div>
+				<div class="overview_product_sum">{{ printPrice(shipping_discount) }}</div>
 			</li>
 		</ul>
 
 		<div id="submit_bar" class="button_bar" v-if="stage == 'overview'">
 			<button @click="stage = 'pick'" style="margin-right: auto;">Zurück</button>
 			<!--label>Der tatsächliche Preis ergibt sich aus dem abgewogenen Gewicht</label-->
-			ca. {{ printPrice(sum) }}
+			Vorläufige Summe: {{ printPrice(sum + shipping_base - shipping_discount) }}
 			<button @click="order()">Bestellen</button>
 		</div>
 	</div>
@@ -125,6 +125,7 @@ import { reactive } from 'vue';
 type Data = {
 	date: string,
 	stage: 'pick' | 'overview' | 'success' | 'error',
+	shipping_base: number,
 	customer_data: {
 		name: string,
 		message: string,
@@ -134,6 +135,7 @@ type Data = {
 const data: Data = reactive({
 	stage: 'pick',
 	date: 'initial',
+	shipping_base: 3,
 	customer_data: {
 		name: '',
 		message: '',
@@ -154,7 +156,6 @@ type Product = {
 	comment_enabled: boolean
 }
 
-//const CSV_REGEX = /(".*?"|[^",\s]+)(?=\s*,|\s*$)/g;
 function readCells(line: string): string[] {
 	let in_escaped = false;
 	let result: string[] = [];
@@ -226,6 +227,11 @@ export default {
 				sum += product.amount * product.price;
 			}
 			return sum;
+		},
+		shipping_discount() {
+			let range = Math.max(0, this.sum - 20);
+			let discount = Math.ceil(range) * 0.1;
+			return Math.min(discount, 1);
 		}
 	},
 	methods: {
