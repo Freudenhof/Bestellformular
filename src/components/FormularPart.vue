@@ -72,13 +72,17 @@
 				<div class="overview_product_amount">{{ product.amount + ' ' + product.unit }}</div>
 				<div class="overview_product_sum">{{ printPrice(product.amount * product.price) }}</div>
 			</li>
+			<li style="padding-bottom: 28px;">
+				<div class="overview_product_extra">Bestellwert</div>
+				<div class="overview_product_sum">{{ printPrice(sum) }}</div>
+			</li>
 			<li>
 				<div class="overview_product_extra">Lieferkosten</div>
 				<div class="overview_product_sum">{{ printPrice(shipping_base) }}</div>
 			</li>
 			<li>
-				<div class="overview_product_extra">Lieferung Mengenrabatt</div>
-				<div class="overview_product_sum">{{ printPrice(shipping_discount) }}</div>
+				<div class="overview_product_extra">Lieferkosten Mengenrabatt (0,10€ für jeden Euro ab 20€ bis 30€)</div>
+				<div class="overview_product_sum">{{ printPrice(-shipping_discount) }}</div>
 			</li>
 		</ul>
 
@@ -122,8 +126,6 @@
 import FileSaver from 'file-saver';
 import { reactive } from 'vue';
 import csv_content from "./../../preisliste.csv?raw";
-//const csv_content = import(`./../../preisliste.csv?raw`);
-console.log(csv_content)
 
 type Data = {
 	date: string,
@@ -182,12 +184,6 @@ function parseGermanFloat(input: string): number {
 }
 
 async function parseCSVFile() {
-	var myHeaders = new Headers();
-	myHeaders.append('Content-Type','text/plain; charset=UTF-8');
-	//const response = await fetch('./../preisliste.csv', {headers: myHeaders});
-	//let buffer = await response.arrayBuffer();
-	//const decoder = new TextDecoder('iso-8859-1');
-    //const csv_content = decoder.decode(buffer);
 	let lines = csv_content.split(/\n/g);
 	
 	data.date = readCells(lines[11])[5] ?? '';
@@ -229,10 +225,10 @@ export default {
 			for (let product of this.products) {
 				sum += product.amount * product.price;
 			}
-			return sum;
+			return Math.round(sum * 100) / 100;
 		},
 		shipping_discount() {
-			let range = Math.max(0, this.sum - 20);
+			let range = Math.max(0, this.sum - 19.99);
 			let discount = Math.ceil(range) * 0.1;
 			return Math.min(discount, 1);
 		}
