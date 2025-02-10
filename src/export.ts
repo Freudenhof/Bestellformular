@@ -1,5 +1,13 @@
 import type { Product } from "./types";
 
+
+function printPrice(price: number): string {
+    return price.toFixed(2).replace(/\./, ',');
+}
+function printFloat(price: number): string {
+    return price.toString().replace(/\./, ',');
+}
+
 interface FormData {
     customer_data: {
 		name: string,
@@ -52,10 +60,10 @@ export function generateOverviewSheet(data: FormData): string {
             product.name,
             product.origin,
             product.unit,
-            product.price,
-            product.amount,
+            printPrice(product.price),
+            printFloat(product.amount),
             product.comment_enabled ? product.comment : '',
-            product.amount * product.price,
+            printPrice(product.amount * product.price),
             '',
         ];
         lines.push(lineify(cells));
@@ -80,7 +88,7 @@ export function generateEmailOrderSheet(data: FormData): string {
         'Menge',
         'Bemerkung',
         'Summe',
-    ]))
+    ]));
 
     for (let product of data.products) {
         let ignore: boolean = !(product.amount || (product.comment_enabled && product.comment));
@@ -89,10 +97,10 @@ export function generateEmailOrderSheet(data: FormData): string {
             product.name,
             product.origin,
             product.unit,
-            product.price,
-            ignore ? '' : product.amount,
+            printPrice(product.price),
+            ignore ? '' : printFloat(product.amount),
             ignore ? '' : product.comment,
-            ignore ? '' : product.amount * product.price,
+            ignore ? '' : printPrice(product.amount * product.price),
             '',
         ];
         lines.push(lineify(cells));
