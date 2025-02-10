@@ -126,6 +126,8 @@
 import FileSaver from 'file-saver';
 import { reactive } from 'vue';
 import csv_content from "./../../preisliste.csv?raw";
+import { generateEmailOrderSheet, generateOverviewSheet } from '../export';
+import type { Product } from '../types';
 
 type Data = {
 	date: string,
@@ -148,18 +150,6 @@ const data: Data = reactive({
 	products: [
 	]
 });
-type Product = {
-	name: string
-	group: number
-	packorder: number
-	unit: string
-	price: number
-	origin: string
-	label: string
-	amount: number
-	comment: string
-	comment_enabled: boolean
-}
 
 function readCells(line: string): string[] {
 	let in_escaped = false;
@@ -254,60 +244,6 @@ export default {
 				alert('Bitte zunächst eine Bestellmenge eingeben.')
 			}
 		},
-		generateOrderSheet(): string {
-			let lineify = (cells: (string|number)[]): string => {
-				return cells.map(cell => {
-					if (typeof cell == 'number') {
-						return (Math.round(cell * 10_000) / 10_000).toString();
-					}
-					if (cell.includes(',')) {
-						return `"${cell}"`;
-					} else {
-						return cell;
-					}
-				}).join(',');
-			}
-			let lines = [
-				lineify([this.customer_data.name]),
-				lineify([this.date]),
-				lineify([this.customer_data.message]),
-				'',
-			];
-
-			let ordered_products = this.ordered.slice();
-
-			ordered_products.sort((a, b) => {
-				if (a.packorder != b.packorder) return a.packorder-b.packorder;
-				return a.group-b.group;
-			});
-
-			lines.push(lineify([
-				'Gruppe',
-				'Bezeichnung',
-				'Herkunft',
-				'Einheit',
-				'Preis',
-				'Menge',
-				'Bemerkung',
-				'Summe',
-			]))
-	
-			for (let product of ordered_products) {
-				let cells = [
-					product.group,
-					product.name,
-					product.origin,
-					product.unit,
-					product.price,
-					product.amount,
-					product.comment_enabled ? product.comment : '',
-					product.amount * product.price,
-					'',
-				];
-				lines.push(lineify(cells));
-			}
-			return lines.join('\n');
-		},
 		getCSVFilename() {
 			return `Bestellung ${this.date}.csv`
 		},
@@ -317,7 +253,7 @@ export default {
 				return;
 			}
 
-			let order = this.generateOrderSheet();
+			let order = generateEmailOrderSheet(this);
 
 			fetch("https://freudenhof.de/register-order/", {
 				method: "POST",
@@ -337,7 +273,7 @@ export default {
 			})
 		},
 		downloadSheet() {
-			let page = this.generateOrderSheet();
+			let page = generateOverviewSheet(this);
 			let blob = new Blob([page], {type: 'text/plain;charset=utf-8'});
 			FileSaver.saveAs(blob, this.getCSVFilename());
 		}
