@@ -6,7 +6,7 @@
 
 		<p>Willkommen zu unserem Bestellformular für die Gemüse-Abokiste!</p>
 		<p>Dieses Formular richtet sich an Bestandskunden. Wenn Sie als Neukunde an unserer <a href="https://freudenhof.de/?page_id=153" target="_blank">Abokiste</a> Interesse haben, <a href="https://freudenhof.de/?page_id=153">kontaktieren Sie uns!</a></p>
-		<p class="date">Bestellung für {{ date }}</p>
+		<p class="important_note">Wir sind im Urlaub! Ab der ersten Dezemberwoche kann wieder bestellt werden.</p>
 
 		<ul id="product_list">
 			<li class="product" :class="{selected: product.amount}" v-for="product of products">
@@ -48,7 +48,7 @@
 
 		<div id="order_sum" class="button_bar">
 			ca. {{ printPrice(sum) }}
-			<button @click="nextPage()">Weiter</button>
+			<!--button @click="nextPage()">Weiter</button-->
 		</div>
 
 	</div>
@@ -301,6 +301,14 @@ h1 {
 p.date {
 	margin-top: 20px;
 	text-align: right;
+}
+
+p.important_note {
+	margin: 20px 0;
+	padding: 12px;
+	border-radius: 5px;
+	background-color: rgba(80, 180, 250, 0.2);
+	border: 1px solid #3d86ec;
 }
 
 .form_bar {
