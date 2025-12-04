@@ -6,7 +6,7 @@
 
 		<p>Willkommen zu unserem Bestellformular für die Gemüse-Abokiste!</p>
 		<p>Dieses Formular richtet sich an Bestandskunden. Wenn Sie als Neukunde an unserer <a href="https://freudenhof.de/?page_id=153" target="_blank">Abokiste</a> Interesse haben, <a href="https://freudenhof.de/?page_id=153">kontaktieren Sie uns!</a></p>
-		<p class="important_note">Wir sind im Urlaub! Ab der ersten Dezemberwoche kann wieder bestellt werden.</p>
+		<p class="important_note">Wir sind im Urlaub! Ab der zweiten Dezemberwoche kann wieder bestellt werden.</p>
 
 		<ul id="product_list">
 			<li class="product" :class="{selected: product.amount}" v-for="product of products">
