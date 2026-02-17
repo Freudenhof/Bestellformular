@@ -183,7 +183,7 @@ function parseGermanFloat(input: string): number {
 	return parseFloat(input.replace(/,/, '.'));
 }
 
-function getLastOrderInfo() {
+function updateLastOrderInfo() {
 	let raw = localStorage.getItem('last_order') as string;
 	let info: LastOrderInfo | undefined;
 	if (!raw) return;
@@ -227,7 +227,7 @@ async function parseCSVFile() {
 	}
 	console.log(`Loaded ${data.products.length} products`);
 }
-parseCSVFile().then(getLastOrderInfo);
+parseCSVFile().then(updateLastOrderInfo);
 
 export default {
 	name: 'FormularPart',
@@ -301,6 +301,7 @@ export default {
 					list_date: this.date
 				}
 				localStorage.setItem('last_order', JSON.stringify(save_payload));
+				updateLastOrderInfo();
 			}).catch(() => {
 				this.stage = 'error';
 			})
