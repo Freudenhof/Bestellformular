@@ -6,6 +6,9 @@
 
 		<p>Willkommen zu unserem Bestellformular für die Gemüse-Abokiste!</p>
 		<p>Dieses Formular richtet sich an Bestandskunden. Wenn Sie als Neukunde an unserer <a href="https://freudenhof.de/?page_id=153" target="_blank">Abokiste</a> Interesse haben, <a href="https://freudenhof.de/?page_id=153">kontaktieren Sie uns!</a></p>
+		
+		<div class="last_order_info" v-if="last_order_info">{{ last_order_info }}</div>
+		
 		<p class="date">Bestellung für {{ date }}</p>
 
 		<ul id="product_list">
@@ -133,6 +136,7 @@ type Data = {
 	date: string,
 	stage: 'pick' | 'overview' | 'success' | 'error',
 	shipping_base: number,
+	last_order_info: string,
 	customer_data: {
 		name: string,
 		message: string,
@@ -143,6 +147,7 @@ const data: Data = reactive({
 	stage: 'pick',
 	date: 'initial',
 	shipping_base: 3,
+	last_order_info: '',
 	customer_data: {
 		name: '',
 		message: '',
@@ -150,6 +155,11 @@ const data: Data = reactive({
 	products: [
 	]
 });
+type LastOrderInfo = {
+	order_date: number
+	list_date: string
+}
+
 
 function readCells(line: string): string[] {
 	let in_escaped = false;
@@ -171,6 +181,24 @@ function readCells(line: string): string[] {
 }
 function parseGermanFloat(input: string): number {
 	return parseFloat(input.replace(/,/, '.'));
+}
+
+function getLastOrderInfo() {
+	let raw = localStorage.getItem('last_order') as string;
+	let info: LastOrderInfo | undefined;
+	if (!raw) return;
+	try {
+		info = JSON.parse(raw);
+	} catch (err) {
+		console.error(err);
+	}
+	if (!info) return;
+	if (info.list_date != data.date) return;
+
+	let date = new Date(info.order_date);
+	let day = `${date.getDate()}.${date.getMonth()+1}`;
+	let time = date.toLocaleTimeString().replace(/:\d+$/, '');
+	data.last_order_info = `Ihre Bestellung für ${info.list_date} ist eingegangen am ${day} um ${time}.`;
 }
 
 async function parseCSVFile() {
@@ -199,7 +227,7 @@ async function parseCSVFile() {
 	}
 	console.log(`Loaded ${data.products.length} products`);
 }
-parseCSVFile();
+parseCSVFile().then(getLastOrderInfo);
 
 export default {
 	name: 'FormularPart',
@@ -268,6 +296,11 @@ export default {
 			}).then((response) => {
 				response.text().then(console.log)
 				this.stage = 'success';
+				const save_payload: LastOrderInfo = {
+					order_date: Date.now(),
+					list_date: this.date
+				}
+				localStorage.setItem('last_order', JSON.stringify(save_payload));
 			}).catch(() => {
 				this.stage = 'error';
 			})
@@ -301,6 +334,13 @@ h1 {
 p.date {
 	margin-top: 20px;
 	text-align: right;
+}
+.last_order_info {
+	margin: 20px 0;
+	padding: 12px;
+	border-radius: 5px;
+	background-color: rgba(80, 180, 250, 0.2);
+	border: 1px solid #3d86ec;
 }
 
 p.important_note {
